@@ -237,7 +237,7 @@ Function Get-IPACmdletBindingValue {
                 }
             }
             if ($inputSchemaObject.pattern) {
-                $validation = '[ValidatePattern(' + '"(' + $inputSchemaObject.pattern + '")]'
+                $validation = '[ValidatePattern(' + '"' + $inputSchemaObject.pattern + '")]'
             } elseif ($inputSchemaObject.values) {
                 $validation = '[ValidateSet(' + (($inputSchemaObject.values | ForEach-Object {'"{0}"' -f $_}) -join ",") + ')]'
             } else {
