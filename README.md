@@ -10,6 +10,10 @@ This module will use JSON_Metadata and env APIs from your IPA Server to dynamica
 ## Note
 For more information on the FreeIPA API, please connect to the web interface on your IPA Server : https://yourIPA.domain.tld/ipa/ui/#/p/apibrowser/type=command
 Don't forget to trust your IPA AC / ssl certificate locally before using the Powershell Module.
+**Please unload your manage-FreeIPA module before loading the build module because some functions and alias are shared**
+```
+	C:\PS> Remove-Module Manage-FreeIPA
+```
 
 ## Documentation
 To do ;)
