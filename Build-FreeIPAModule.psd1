@@ -12,7 +12,7 @@
 RootModule = 'Build-FreeIPAModule.psm1'
 
 # Numero de version de ce module.
-ModuleVersion = '0.6'
+ModuleVersion = '0.7'
 
 # editions PS prises en charge
 # CompatiblePSEditions = @()

@@ -1,7 +1,7 @@
 #
 # Created by: lucas.cueff[at]lucas-cueff.com
 # Build by : Lucas Cueff
-# v0.5 : 
+# v0.7 : 
 # - First Release
 #
 # Released on: 18/11/2018
