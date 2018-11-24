@@ -88,7 +88,7 @@ Generate your custom IPA PowerShell management module based on your schema and e
 	Version          : 1.0
 	Alias            : {Add-IPAAci, Remove-IPAAci, Find-IPAAci, Set-IPAAci...}
 	BuildingDate     : 18/11/2018 18:26:37
-	ModuleFileName   : C:\Users\lcu\Documents\GitHub\Build-FreeIPAModule\Manage-FreeIPA_Build_636781623970522876.psm1
+	ModuleFileName   : C:\Users\tst\Documents\GitHub\Build-FreeIPAModule\Manage-FreeIPA_Build_636781623970522876.psm1
 	Builder          : You
 	Changelog        : Your First Release
 	Functions        : {Invoke-FreeIPAAPIAci_Add, Invoke-FreeIPAAPIAci_Del, Invoke-FreeIPAAPIAci_Find, Invoke-FreeIPAAPIAci_Mod...}
