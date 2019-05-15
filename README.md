@@ -19,7 +19,7 @@ Don't forget to trust your IPA AC / ssl certificate locally before using the Pow
 ## Documentation
 To do ;)
 
-## Install Manage-ADShadowGroup from PowerShell Gallery repository
+## Install Build-FreeIPAModule from PowerShell Gallery repository
 You can easily install it from powershell gallery repository https://www.powershellgallery.com/packages/Manage-FreeIPA/ using a simple powershell command and an internet access :-)
 ```
 	Install-Module -Name Build-FreeIPAModule
