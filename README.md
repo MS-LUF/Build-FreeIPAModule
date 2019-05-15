@@ -1,7 +1,8 @@
+![image](https://www.freeipa.org/images/freeipa/freeipa-logo.png)
 # Build-FreeIPAModule
 a few PowerShell cmdlets to build your own IPA/FreeIPA Powershell management Module - https://github.com/freeipa/freeipa
 
-(c) 2018 lucas-cueff.com Distributed under Artistic Licence 2.0 (https://opensource.org/licenses/artistic-license-2.0).
+(c) 2018-2019 lucas-cueff.com Distributed under Artistic Licence 2.0 (https://opensource.org/licenses/artistic-license-2.0).
 
 ## Description
 Build-FreeIPAModule.psm1 PowerShell module provides a set of PowerShell cmdlets to build your own FreeIPA/IPA management module to manage your FreeIPA/IPA infrastructure from Powershell (Core/Classic - Windows/Linux/Mac Os).
