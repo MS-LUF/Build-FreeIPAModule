@@ -6,7 +6,7 @@
 #
 # Released on: %builddate%
 #
-#'(c) 2018 lucas-cueff.com - Distributed under Artistic Licence 2.0 (https://opensource.org/licenses/artistic-license-2.0).'
+#'(c) 2018-2020 lucas-cueff.com - Distributed under Artistic Licence 2.0 (https://opensource.org/licenses/artistic-license-2.0).'
 
 <#
 	.SYNOPSIS 
@@ -39,6 +39,9 @@ Function Set-FreeIPAAPICredentials {
           [switch]$EncryptKeyInLocalFile,
       [parameter(Mandatory=$false)]
       [ValidateNotNullOrEmpty()]
+          [string]$ConfigName,
+      [parameter(Mandatory=$false)]
+      [ValidateNotNullOrEmpty()]
           [securestring]$MasterPassword
     )
     if ($Remove.IsPresent) {
@@ -67,33 +70,50 @@ Function Set-FreeIPAAPICredentials {
                   EncryptedAdminAccount = $EncryptedLogin
               }
               $FolderName = 'Manage-FreeIPA'
-              $ConfigName = 'Manage-FreeIPA.xml'
-              if (!(Test-Path -Path "$($env:AppData)\$FolderName")) {
-                  New-Item -ItemType directory -Path "$($env:AppData)\$FolderName" | Out-Null
+              if ($ConfigName) {
+                  $ConfigName = "Manage-FreeIPA-$($ConfigName).xml"
+              } else {
+                  $ConfigName = 'Manage-FreeIPA.xml'
               }
-              if (test-path "$($env:AppData)\$FolderName\$ConfigName") {
-                  Remove-item -Path "$($env:AppData)\$FolderName\$ConfigName" -Force | out-null
+              if (!$home -and $env:userprofile) {
+				  $global:home = $env:userprofile
+			  }
+              if (!(Test-Path -Path "$($global:home)\$FolderName")) {
+                  New-Item -ItemType directory -Path "$($global:home)\$FolderName" | Out-Null
               }
-              $ObjConfigFreeIPA | Export-Clixml "$($env:AppData)\$FolderName\$ConfigName"
-          }	
+              if (test-path "$($global:home)\$FolderName\$ConfigName") {
+                  Remove-item -Path "$($global:home)\$FolderName\$ConfigName" -Force | out-null
+              }
+              $ObjConfigFreeIPA | Export-Clixml "$($global:home)\$FolderName\$ConfigName"
+          }
       }
     }
   }
 Function Import-FreeIPAAPICrendentials {
       [CmdletBinding()]
       Param(
-          [Parameter(Mandatory=$true,ValueFromPipelineByPropertyName=$true)]
+          [parameter(Mandatory=$false,ValueFromPipelineByPropertyName=$true)]
           [ValidateNotNullOrEmpty()]
-          [securestring]$MasterPassword
+            [string]$ConfigName,
+          [Parameter(Mandatory=$true)]
+          [ValidateNotNullOrEmpty()]
+            [securestring]$MasterPassword
       )
       process {
-        $FolderName = 'Manage-FreeIPA'
-        $ConfigName = 'Manage-FreeIPA.xml'
-          if (!(Test-Path "$($env:AppData)\$($FolderName)\$($ConfigName)")){
+          $FolderName = 'Manage-FreeIPA'
+          if ($ConfigName) {
+            $ConfigName = "Manage-FreeIPA-$($ConfigName).xml"
+          } else {
+            $ConfigName = 'Manage-FreeIPA.xml'
+          }
+          if (!$home -and $env:userprofile) {
+            $global:home = $env:userprofile
+          }
+          if (!(Test-Path "$($global:home)\$($FolderName)\$($ConfigName)")){
               Write-warning 'Configuration file has not been set, Set-FreeIPAAPICredentials to configure the credentials.'
               throw 'error config file not found'
           }
-          $ObjConfigFreeIPA = Import-Clixml "$($env:AppData)\$($FolderName)\$($ConfigName)"
+          $ObjConfigFreeIPA = Import-Clixml "$($global:home)\$($FolderName)\$($ConfigName)"
           $Credentials = New-Object System.Management.Automation.PSCredential -ArgumentList 'user', $MasterPassword
           try {
               $Rfc2898Deriver = New-Object System.Security.Cryptography.Rfc2898DeriveBytes -ArgumentList $Credentials.GetNetworkCredential().Password, $ObjConfigFreeIPA.Salt
@@ -177,22 +197,26 @@ Function Get-FreeIPAAPIAuthenticationCookie {
             $BSTRCredentials = @{
                 user = [Runtime.InteropServices.Marshal]::PtrToStringAuto($SecureStringLoginToBSTR)
                 password = [Runtime.InteropServices.Marshal]::PtrToStringAuto($SecureStringPassToBSTR) 
-            }
-            $FreeIPALogin = Invoke-WebRequest "$($global:FreeIPAAPIServerConfig.ServerURL)/ipa/session/login_password" -Session 'FunctionFreeIPASession' -Body $BSTRCredentials -Method 'POST'
-        } catch [System.Net.Http.HttpRequestException] {
-            switch ($_.Exception.Response.StatusCode.value__) {
-                404 { 
-                        Write-error -message "Please check that /ipa/session/login_password is available on your FreeIPA server"
-                    }
-                Default {
-                            write-error -message "HTTP Error Code $($_.Exception.Response.StatusCode.Value__) with error message:$($_.Exception.Response.StatusDescription)"
-                        }
-            }
-            Break
-        } catch [System.Exception] {
-            write-error -message "other error encountered - error message:$($_.Exception.message)"
-            break
-        }
+            }            
+            if ($global:FreeIPAProxyParams) {
+			  $params = $global:FreeIPAProxyParams.clone()
+			  if (!$params.UseBasicParsing){$params.add('UseBasicParsing', $true)}
+		    } Else {
+			  $params = @{}
+			  $params.add('UseBasicParsing', $true)
+		    }
+            $params.add('URI', "$($global:FreeIPAAPIServerConfig.ServerURL)/ipa/session/login_password")
+            $params.add('Session', 'FunctionFreeIPASession')
+            $params.add('Body',$BSTRCredentials)
+            $params.add('Method','POST')
+            $FreeIPALogin = Invoke-WebRequest @params
+        } catch {
+            write-verbose -message "Error Type: $($_.Exception.GetType().FullName)"
+			write-verbose -message "Error Message: $($_.Exception.Message)"
+			write-verbose -message "HTTP error code:$($_.Exception.Response.StatusCode.Value__)"
+			write-verbose -message "HTTP error message:$($_.Exception.Response.StatusDescription)"
+            $PSCmdlet.ThrowTerminatingError($PSitem)
+        } 
         $global:FreeIPASession = $FunctionFreeIPASession
         $FreeIPALogin
     }
@@ -215,25 +239,109 @@ Function Invoke-FreeIPAAPI {
             Write-Verbose -message $json
         } catch {
             write-error -message "Not able to convert input object to json"
-            break
         }
         try {
             if ($json) {
-                Invoke-RestMethod "$($global:FreeIPAAPIServerConfig.ServerURL)/ipa/session/json" -Method Post -WebSession $global:FreeIPASession -Body $json -ContentType 'application/json' -Headers @{"Referer"="$($global:FreeIPAAPIServerConfig.ServerURL)/ipa/session/json"}
+              if ($global:FreeIPAProxyParams) {
+			  $params = $global:FreeIPAProxyParams.clone()
+			  if (!$params.UseBasicParsing){$params.add('UseBasicParsing', $true)}
+		      } Else {
+			    $params = @{}
+			    $params.add('UseBasicParsing', $true)
+		      }
+              $params.add('URI', "$($global:FreeIPAAPIServerConfig.ServerURL)/ipa/session/json")
+              $params.add('WebSession', $global:FreeIPASession)
+              $params.add('Body',$json)
+              $params.add('Method','POST')
+              $params.add('ContentType','application/json')
+              $params.add('Headers',@{"Referer"="$($global:FreeIPAAPIServerConfig.ServerURL)/ipa/session/json"})
+                Invoke-RestMethod @params
             }            
-        } catch [System.Net.Http.HttpRequestException] {
-            switch ($_.Exception.Response.StatusCode.value__) {
-                404 { 
-                        Write-error -message "Please check that /ipa/session/json is available on your FreeIPA server"
-                    }
-                Default {
-                            write-error -message "HTTP Error Code $($_.Exception.Response.StatusCode.Value__) with error message:$($_.Exception.Response.StatusDescription)"
-                        }
-            }
-            Break
         } catch {
-            write-error -message "error - please troubleshoot - error message:$($_.Exception.message)"
-            break
+            write-verbose -message "Error Type: $($_.Exception.GetType().FullName)"
+			write-verbose -message "Error Message: $($_.Exception.Message)"
+			write-verbose -message "HTTP error code:$($_.Exception.Response.StatusCode.Value__)"
+			write-verbose -message "HTTP error message:$($_.Exception.Response.StatusDescription)"
+            $PSCmdlet.ThrowTerminatingError($PSitem)
         }
     }
+}
+Function Set-FreeIPAProxy {
+	<#
+	  .SYNOPSIS 
+	  Set an internet proxy to use FreeIPA web api
+  
+	  .DESCRIPTION
+	  Set an internet proxy to use FreeIPA web api
+
+	  .PARAMETER DirectNoProxy
+	  -DirectNoProxy
+	  Remove proxy and configure FreeIPA powershell functions to use a direct connection
+	
+	  .PARAMETER Proxy
+	  -Proxy{Proxy}
+	  Set the proxy URL
+
+	  .PARAMETER ProxyCredential
+	  -ProxyCredential{ProxyCredential}
+	  Set the proxy credential to be authenticated with the internet proxy set
+
+	  .PARAMETER ProxyUseDefaultCredentials
+	  -ProxyUseDefaultCredentials
+	  Use current security context to be authenticated with the internet proxy set
+
+	  .PARAMETER AnonymousProxy
+	  -AnonymousProxy
+	  No authentication (open proxy) with the internet proxy set
+
+	  .OUTPUTS
+	  none
+	  
+	  .EXAMPLE
+	  Remove Internet Proxy and set a direct connection
+	  C:\PS> Set-FreeIPAProxy -DirectNoProxy
+
+	  .EXAMPLE
+	  Set Internet Proxy and with manual authentication
+	  $credentials = get-credential 
+	  C:\PS> Set-FreeIPAProxy -Proxy "http://myproxy:8080" -ProxyCredential $credentials
+
+	  .EXAMPLE
+	  Set Internet Proxy and with automatic authentication based on current security context
+	  C:\PS> Set-FreeIPAProxy -Proxy "http://myproxy:8080" -ProxyUseDefaultCredentials
+
+	  .EXAMPLE
+	  Set Internet Proxy and with no authentication 
+	  C:\PS> Set-FreeIPAProxy -Proxy "http://myproxy:8080" -AnonymousProxy
+	#>
+	[cmdletbinding()]
+	Param (
+	  [Parameter(Mandatory=$false,ValueFromPipelineByPropertyName=$false)]
+		  [switch]$DirectNoProxy,
+	  [Parameter(Mandatory=$false,ValueFromPipelineByPropertyName=$true)]
+          [ValidateScript({$_ -match "(http[s]?)(:\/\/)([^\s,]+)"})]
+	      [string]$Proxy,
+	  [Parameter(Mandatory=$false,ValueFromPipelineByPropertyName=$false)]
+	      [Management.Automation.PSCredential]$ProxyCredential,
+	  [Parameter(Mandatory=$false,ValueFromPipelineByPropertyName=$false)]
+		  [Switch]$ProxyUseDefaultCredentials,
+	  [Parameter(Mandatory=$false,ValueFromPipelineByPropertyName=$false)]
+		  [Switch]$AnonymousProxy
+	)
+	if ($DirectNoProxy.IsPresent){
+		$global:FreeIPAProxyParams = $null
+	} ElseIf ($Proxy) {
+		$global:FreeIPAProxyParams = @{}
+		$FreeIPAProxyParams.Add('Proxy', $Proxy)
+		if ($ProxyCredential){
+			$FreeIPAProxyParams.Add('ProxyCredential', $ProxyCredential)
+			If ($FreeIPAProxyParams.ProxyUseDefaultCredentials) {$FreeIPAProxyParams.Remove('ProxyUseDefaultCredentials')}
+		} Elseif ($ProxyUseDefaultCredentials.IsPresent){
+			$FreeIPAProxyParams.Add('ProxyUseDefaultCredentials', $ProxyUseDefaultCredentials)
+			If ($FreeIPAProxyParams.ProxyCredential) {$FreeIPAProxyParams.Remove('ProxyCredential')}
+		} ElseIf ($AnonymousProxy.IsPresent) {
+			If ($FreeIPAProxyParams.ProxyUseDefaultCredentials) {$FreeIPAProxyParams.Remove('ProxyUseDefaultCredentials')}
+			If ($FreeIPAProxyParams.ProxyCredential) {$FreeIPAProxyParams.Remove('ProxyCredential')}
+		}
+	}
 }

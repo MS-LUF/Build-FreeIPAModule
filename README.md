@@ -1,8 +1,7 @@
-![image](https://www.freeipa.org/images/freeipa/freeipa-logo.png)
 # Build-FreeIPAModule
 a few PowerShell cmdlets to build your own IPA/FreeIPA Powershell management Module - https://github.com/freeipa/freeipa
 
-(c) 2018-2019 lucas-cueff.com Distributed under Artistic Licence 2.0 (https://opensource.org/licenses/artistic-license-2.0).
+(c) 2018-2020 lucas-cueff.com Distributed under Artistic Licence 2.0 (https://opensource.org/licenses/artistic-license-2.0).
 
 ## Description
 Build-FreeIPAModule.psm1 PowerShell module provides a set of PowerShell cmdlets to build your own FreeIPA/IPA management module to manage your FreeIPA/IPA infrastructure from Powershell (Core/Classic - Windows/Linux/Mac Os).
@@ -10,17 +9,17 @@ This module will use JSON_Metadata and env APIs from your IPA Server to dynamica
 
 ## Note
 For more information on the FreeIPA API, please connect to the web interface on your IPA Server : https://yourIPA.domain.tld/ipa/ui/#/p/apibrowser/type=command
-Don't forget to trust your IPA AC / ssl certificate locally before using the Powershell Module.
+**Don't forget to trust your IPA AC / ssl certificate locally before using the Powershell Module.**
 **Please unload your manage-FreeIPA module before loading the build module because some functions and alias are shared**
 ```
 	C:\PS> Remove-Module Manage-FreeIPA
 ```
 
-## Documentation
-To do ;)
+## Version
+v0.8 : Add multi config file as requested by baldator + Fix securestring issue reported by nadinezan + add proxy management to connect to IPA + simplify error management in catch
 
 ## Install Build-FreeIPAModule from PowerShell Gallery repository
-You can easily install it from powershell gallery repository https://www.powershellgallery.com/packages/Manage-FreeIPA/ using a simple powershell command and an internet access :-)
+You can easily install it from powershell gallery repository https://www.powershellgallery.com/packages/Build-FreeIPAModule/ using a simple powershell command and an internet access :-)
 ```
 	Install-Module -Name Build-FreeIPAModule
 ```
@@ -46,7 +45,8 @@ You can easily install it from powershell gallery repository https://www.powersh
 - Invoke-FreeIPAAPISessionLogout
 - Publish-IPAModule
 - Set-FreeIPAAPICredentials
-- Set-FreeIPAAPIServerConfig                        
+- Set-FreeIPAAPIServerConfig
+- Set-FreeIPAProxy                        
 ### Alias
 - Connect-IPA
 - Disconnect-IPA
@@ -54,9 +54,13 @@ You can easily install it from powershell gallery repository https://www.powersh
 - Get-IPAJsonMetadata
 - Import-IPACrendentials
 - Set-IPAServerConfig
-- Set-IPACredentials                                     
+- Set-IPACredentials
+- Set-IPAProxy                                     
 
 ## Use the module
+### Build a module based on last FreeIPA version using the official FreeIPA online demo environment
+FreeIPA.org provides an online environment for testing purpose with the last official release available.
+For more information : https://www.freeipa.org/page/Demo
 ### Set your config and be authenticated with your server
 Set your encrypted credential in cache for future use and set it also in an external file if necessary (EncryptKeyInLocalFile and MasterPassword)
 ```
@@ -79,6 +83,11 @@ Generate your Powershell schema file from your current IPA environment (default 
 ```
 	C:\PS> Export-IPASchema
 ```
+### Managing your network access to IPA front end through web proxy
+You can set a proxy (with authentication or not, direct connection...). For instance, to set a proxy with a SSO with current security context :
+```
+    C:\PS>Set-IPAProxy -proxy "http://myproxy:3128" -ProxyUseDefaultCredentials
+```
 ### Generate your custom module based on your current IPA configuration
 Generate your custom IPA PowerShell management module based on your schema and environment
 ```
@@ -89,7 +98,7 @@ Generate your custom IPA PowerShell management module based on your schema and e
 	Version          : 1.0
 	Alias            : {Add-IPAAci, Remove-IPAAci, Find-IPAAci, Set-IPAAci...}
 	BuildingDate     : 18/11/2018 18:26:37
-	ModuleFileName   : C:\Users\tst\Documents\GitHub\Build-FreeIPAModule\Manage-FreeIPA_Build_636781623970522876.psm1
+	ModuleFileName   : C:\Users\lcu\Documents\GitHub\Build-FreeIPAModule\Manage-FreeIPA_Build_636781623970522876.psm1
 	Builder          : You
 	Changelog        : Your First Release
 	Functions        : {Invoke-FreeIPAAPIAci_Add, Invoke-FreeIPAAPIAci_Del, Invoke-FreeIPAAPIAci_Find, Invoke-FreeIPAAPIAci_Mod...}
